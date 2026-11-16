@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<link rel="manifest" href="manifest.json">
+<title>Congo Vibe</title>
+<style>
+:root{--bg:#0b1220;--card:#141d30;--line:#24304a;--fg:#eef2fb;--mute:#8b98b5;--yel:#fcd116;--red:#ce1126;--blue:#2f8cff;--ok:#2fbf71}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,textarea,select{font:inherit;color:inherit}
+#app{max-width:560px;margin:0 auto;height:100%;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line)}
+.logo{font-weight:800;font-size:20px;letter-spacing:-.5px}.logo b{color:var(--yel)}.logo i{color:var(--red);font-style:normal}
+main{flex:1;overflow-y:auto;padding:12px 16px 24px}
+nav{display:flex;border-top:1px solid var(--line);background:var(--card);padding-bottom:env(safe-area-inset-bottom,0)}
+nav button{flex:1;background:none;border:0;padding:12px 0;color:var(--mute);font-size:12px}
+nav button.on{color:var(--yel);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.row{display:flex;gap:10px;align-items:center}.sp{justify-content:space-between}
+.av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--yel),var(--red));display:grid;place-items:center;font-weight:800;color:#111;flex:none;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}.av.big{width:76px;height:76px;font-size:28px}
+.nm{font-weight:700}.mu{color:var(--mute);font-size:13px}
+.vb{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;margin-left:4px}
+.pr{color:var(--yel);font-size:11px;border:1px solid var(--yel);border-radius:6px;padding:0 5px;margin-left:4px}
+.post img.m{width:100%;border-radius:10px;margin-top:8px;max-height:420px;object-fit:cover}
+.act{display:flex;gap:18px;margin-top:8px;color:var(--mute)}.act button{background:none;border:0;padding:4px 0;color:inherit}.act .on{color:var(--red)}
+.btn{background:var(--yel);color:#111;border:0;border-radius:10px;padding:10px 16px;font-weight:700}
+.btn.g{background:var(--line);color:var(--fg)}.btn.r{background:var(--red);color:#fff}.btn.sm{padding:6px 12px;font-size:13px}
+input,textarea,select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;margin:4px 0}
+textarea{min-height:90px;resize:vertical}
+.tabs{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto}.tabs button{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 14px;white-space:nowrap;color:var(--mute)}.tabs .on{background:var(--yel);color:#111;border-color:var(--yel);font-weight:700}
+.stories{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;margin-bottom:6px}.st{text-align:center;font-size:11px;width:62px;flex:none}.st .av{width:58px;height:58px;border:3px solid var(--red);margin:auto}
+.bub{max-width:78%;padding:8px 12px;border-radius:14px;margin:4px 0;word-break:break-word}.me{background:var(--yel);color:#111;margin-left:auto}.ot{background:var(--card);border:1px solid var(--line)}
+.news{border-left:4px solid var(--red)}
+.pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;background:var(--line)}.pill.ok{background:var(--ok);color:#06210f}.pill.no{background:var(--red)}
+.flag{height:4px;background:linear-gradient(90deg,var(--blue) 33%,var(--yel) 33% 66%,var(--red) 66%)}
+.auth{padding:32px 20px}.auth h1{font-size:34px;margin:8px 0}
+.toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#000;border:1px solid var(--line);padding:10px 16px;border-radius:10px;z-index:9;max-width:90%}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SB_URL="https://gyzodhzueahfxaaerbux.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5em9kaHp1ZWFoZnhhYWVyYnV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4NDg1NzcsImV4cCI6MjExMDQyNDU3N30.GTL83H4oik7cT6M_FEjOUj-_e-e5QzzSB4gpg6xMfsI";
+const PAY_NUMBER="0846464895";
+const PLANS={premium:{name:"Premium",price:2,desc:"Stories 48h, boost de publications, badge Premium, messages illimités"},pro:{name:"Pro Média",price:5,desc:"Tout Premium + badge vérifié + publier dans le fil Actualités"}};
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const $=s=>document.querySelector(s), app=$("#app");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let me=null,view="home",tab="all",chatWith=null,chan=null;
+const isPrem=p=>p&&(p.role==="admin"||(p.premium_until&&new Date(p.premium_until)>new Date()));
+const ago=d=>{const s=(Date.now()-new Date(d))/1e3;return s<60?"à l'instant":s<3600?Math.floor(s/60)+" min":s<86400?Math.floor(s/3600)+" h":Math.floor(s/86400)+" j"};
+function toast(t){const e=document.createElement("div");e.className="toast";e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),2800)}
+const av=(p,c="")=>`<div class="av ${c}" onclick="openProfile('${p.id}')">${p.avatar_url?`<img src="${esc(p.avatar_url)}">`:esc((p.display_name||p.username||"?")[0].toUpperCase())}</div>`;
+const badges=p=>(p.verified||p.role==="admin"?'<span class="vb">✓</span>':"")+(isPrem(p)?'<span class="pr">PRO</span>':"")+(p.role==="admin"?'<span class="pr">CRÉATEUR</span>':"");
+
+/* ---------- AUTH ---------- */
+function authScreen(mode="in"){
+  app.innerHTML=`<div class="flag"></div><div class="auth"><div class="logo" style="font-size:16px">RD CONGO</div><h1>Congo <b style="color:var(--yel)">Vibe</b></h1>
+  <p class="mu">Discute, partage, reste informé. Le réseau social de chez nous.</p>
+  ${mode==="up"?'<input id="dn" placeholder="Nom affiché (ex: Manasse)">':""}
+  <input id="em" type="email" placeholder="Adresse e-mail" autocomplete="email"><input id="pw" type="password" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password">
+  <button class="btn" style="width:100%;margin-top:8px" onclick="doAuth('${mode}')">${mode==="in"?"Se connecter":"Créer mon compte"}</button>
+  <p class="mu" style="text-align:center"><a href="#" style="color:var(--yel)" onclick="authScreen('${mode==="in"?"up":"in"}');return false">${mode==="in"?"Pas de compte ? Inscris-toi":"Déjà un compte ? Connecte-toi"}</a></p></div>`;
+}
+async function doAuth(mode){
+  const email=$("#em").value.trim(),password=$("#pw").value;
+  const r=mode==="in"?await sb.auth.signInWithPassword({email,password}):await sb.auth.signUp({email,password,options:{data:{display_name:$("#dn").value.trim()}}});
+  if(r.error)return toast(r.error.message);
+  if(mode==="up"&&!r.data.session){const l=await sb.auth.signInWithPassword({email,password});if(l.error)return toast(l.error.message)}
+  boot();
+}
+async function loadMe(){const{data:{user}}=await sb.auth.getUser();if(!user)return null;const{data}=await sb.from("profiles").select("*").eq("id",user.id).single();return data}
+async function boot(){
+  me=await loadMe();if(!me)return authScreen();
+  app.innerHTML=`<div class="flag"></div><header><div class="logo">Congo <b>Vibe</b></div><div class="mu" id="who"></div></header><main id="mn"></main>
+  <nav>${[["home","Accueil"],["news","Actus RDC"],["new","+ Créer"],["chat","Messages"],["me","Profil"]].map(([k,l])=>`<button data-v="${k}" onclick="go('${k}')">${l}</button>`).join("")}</nav>`;
+  $("#who").textContent="@"+me.username;
+  sb.channel("msgs").on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},p=>{
+    if(p.new.receiver!==me.id&&p.new.sender!==me.id)return;
+    if(view==="chat")chatWith&&(p.new.sender===chatWith||p.new.receiver===chatWith)?openChat(chatWith):renderChats();
+    else if(p.new.receiver===me.id)toast("Nouveau message")}).subscribe();
+  go("home");
+}
+function go(v){view=v;chatWith=null;document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  ({home:()=>renderFeed("all"),news:()=>renderFeed("news"),new:renderNew,chat:renderChats,me:()=>openProfile(me.id)})[v]();$("#mn").scrollTop=0}
+
+/* ---------- FEED ---------- */
+async function renderFeed(kind){
+  const mn=$("#mn");mn.innerHTML='<p class="mu">Chargement…</p>';
+  let q=sb.from("posts").select("*,profiles(id,username,display_name,avatar_url,verified,role,premium_until),likes(user_id),comments(count)").order("boosted",{ascending:false}).order("created_at",{ascending:false}).limit(60);
+  if(kind==="news")q=q.eq("kind","news");else if(tab==="following"){const{data:f}=await sb.from("follows").select("following").eq("follower",me.id);q=q.in("user_id",(f||[]).map(x=>x.following).concat(me.id)).neq("kind","story")}else q=q.neq("kind","story");
+  const [{data:posts,error},st]=await Promise.all([q,kind==="all"?sb.from("posts").select("id,media_url,content,profiles(id,username,display_name,avatar_url)").eq("kind","story").order("created_at",{ascending:false}):{data:[]}]);
+  if(error)return mn.innerHTML=`<p class="mu">${esc(error.message)}</p>`;
+  mn.innerHTML=(kind==="news"?'<h3 style="margin:0 0 10px">Actualités congolaises</h3>':`<div class="tabs"><button class="${tab==="all"?"on":""}" onclick="tab='all';renderFeed('all')">Pour vous</button><button class="${tab==="following"?"on":""}" onclick="tab='following';renderFeed('all')">Abonnements</button></div>`)+
+  ((st.data||[]).length?`<div class="stories">${st.data.map(s=>`<div class="st" onclick="viewStory(${s.id})">${av(s.profiles)}<div>${esc(s.profiles.username)}</div></div>`).join("")}</div>`:"")+
+  ((posts||[]).map(postHTML).join("")||'<p class="mu">Aucune publication pour le moment. Sois le premier !</p>');
+  window._stories=st.data||[];
+}
+function postHTML(p){
+  const liked=p.likes.some(l=>l.user_id===me.id),n=p.comments[0]?.count||0;
+  return `<div class="card post ${p.kind==="news"?"news":""}" id="p${p.id}"><div class="row">${av(p.profiles)}<div style="flex:1"><div class="nm">${esc(p.profiles.display_name)}${badges(p.profiles)}</div><div class="mu">@${esc(p.profiles.username)} · ${ago(p.created_at)}${p.kind==="news"?" · ACTU":""}${p.boosted?" · Sponsorisé":""}</div></div>
+  ${p.user_id===me.id||me.role==="admin"?`<button class="btn g sm" onclick="delPost(${p.id})">Suppr.</button>`:""}</div>
+  <div style="margin-top:8px;white-space:pre-wrap">${esc(p.content)}</div>${p.media_url?`<img class="m" loading="lazy" src="${esc(p.media_url)}">`:""}
+  <div class="act"><button class="${liked?"on":""}" onclick="like(${p.id},${liked})">♥ ${p.likes.length}</button><button onclick="comments(${p.id})">💬 ${n}</button><button onclick="share('${p.id}')">Partager</button></div><div id="c${p.id}"></div></div>`;
+}
+async function like(id,was){await(was?sb.from("likes").delete().match({post_id:id,user_id:me.id}):sb.from("likes").insert({post_id:id,user_id:me.id}));view==="news"?renderFeed("news"):renderFeed("all")}
+async function delPost(id){await sb.from("posts").delete().eq("id",id);document.getElementById("p"+id)?.remove()}
+function share(id){const t=location.href.split("#")[0];(navigator.share?navigator.share({title:"Congo Vibe",url:t}):navigator.clipboard.writeText(t).then(()=>toast("Lien copié"))).catch(()=>{})}
+async function comments(id){
+  const box=$("#c"+id);if(box.innerHTML){box.innerHTML="";return}
+  const{data}=await sb.from("comments").select("*,profiles(username,display_name)").eq("post_id",id).order("created_at");
+  box.innerHTML=(data||[]).map(c=>`<div class="mu" style="margin-top:6px"><b style="color:var(--fg)">${esc(c.profiles.display_name)}</b> ${esc(c.content)}</div>`).join("")+`<div class="row"><input id="ci${id}" placeholder="Ton commentaire"><button class="btn sm" onclick="addComment(${id})">OK</button></div>`;
+}
+async function addComment(id){const v=$("#ci"+id).value.trim();if(!v)return;const{error}=await sb.from("comments").insert({post_id:id,user_id:me.id,content:v});if(error)return toast(error.message);$("#c"+id).innerHTML="";comments(id)}
+function viewStory(id){const s=(window._stories||[]).find(x=>x.id===id);if(!s)return;
+  const o=document.createElement("div");o.style="position:fixed;inset:0;background:#000;z-index:20;display:grid;place-items:center;padding:20px;text-align:center";
+  o.onclick=()=>o.remove();o.innerHTML=`<div><div class="nm" style="margin-bottom:10px">@${esc(s.profiles.username)}</div>${s.media_url?`<img src="${esc(s.media_url)}" style="max-width:100%;max-height:70vh;border-radius:12px">`:""}<p style="font-size:20px">${esc(s.content)}</p><p class="mu">Touche pour fermer</p></div>`;document.body.appendChild(o)}
+
+/* ---------- CRÉER ---------- */
+function renderNew(){
+  const canNews=me.verified||me.role==="admin",prem=isPrem(me);
+  $("#mn").innerHTML=`<div class="card"><textarea id="tx" maxlength="2000" placeholder="Quoi de neuf à Kinshasa ?"></textarea>
+  <input id="fl" type="file" accept="image/*">
+  <select id="kd"><option value="post">Publication</option>${canNews?'<option value="news">Actualité (fil congolais)</option>':""}<option value="story">Story 48h ${prem?"":"(Premium)"}</option></select>
+  <label class="row mu"><input id="bo" type="checkbox" style="width:auto"> Booster en haut du fil ${prem?"":"(Premium)"}</label>
+  <button class="btn" style="width:100%;margin-top:8px" id="pb" onclick="publish()">Publier</button></div>
+  ${prem?"":'<div class="card mu">Passe en Premium pour les stories, le boost et le badge. <a href="#" style="color:var(--yel)" onclick="premiumPage();return false">Voir les offres</a></div>'}`;
+}
+async function publish(){
+  const content=$("#tx").value.trim();if(!content)return toast("Écris quelque chose");
+  $("#pb").disabled=true;let media_url=null;const f=$("#fl").files[0];
+  if(f){const path=`${me.id}/${Date.now()}-${f.name.replace(/[^\w.]/g,"_")}`;const u=await sb.storage.from("media").upload(path,f);if(u.error){$("#pb").disabled=false;return toast(u.error.message)}media_url=sb.storage.from("media").getPublicUrl(path).data.publicUrl}
+  const{error}=await sb.from("posts").insert({user_id:me.id,content,media_url,kind:$("#kd").value,boosted:$("#bo").checked});
+  $("#pb").disabled=false;if(error)return toast(error.message.includes("Premium")?"Fonction réservée aux membres Premium":error.message);
+  toast("Publié !");go($("#kd").value==="news"?"news":"home");
+}
+
+/* ---------- MESSAGES ---------- */
+async function renderChats(){
+  chatWith=null;const mn=$("#mn");
+  mn.innerHTML=`<div class="row"><input id="se" placeholder="Chercher un utilisateur (@nom)"><button class="btn sm" onclick="search()">Chercher</button></div><div id="sr"></div><h3>Discussions</h3><div id="cl"><p class="mu">Chargement…</p></div>`;
+  const{data}=await sb.from("messages").select("*").or(`sender.eq.${me.id},receiver.eq.${me.id}`).order("created_at",{ascending:false}).limit(200);
+  const seen={};(data||[]).forEach(m=>{const o=m.sender===me.id?m.receiver:m.sender;if(!seen[o])seen[o]=m});
+  const ids=Object.keys(seen);if(!ids.length)return $("#cl").innerHTML='<p class="mu">Aucune discussion. Cherche un ami ci-dessus.</p>';
+  const{data:ps}=await sb.from("profiles").select("*").in("id",ids);
+  $("#cl").innerHTML=ids.map(id=>{const p=ps.find(x=>x.id===id),m=seen[id];return `<div class="card row" onclick="openChat('${id}')">${av(p)}<div style="flex:1;min-width:0"><div class="nm">${esc(p.display_name)}${badges(p)}</div><div class="mu" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.sender===me.id?"Toi : ":""}${esc(m.content)}</div></div><div class="mu">${ago(m.created_at)}</div></div>`}).join("");
+}
+async function search(){const q=$("#se").value.trim().replace("@","");if(!q)return;
+  const{data}=await sb.from("profiles").select("*").or(`username.ilike.%${q}%,display_name.ilike.%${q}%`).neq("id",me.id).limit(10);
+  $("#sr").innerHTML=(data||[]).map(p=>`<div class="card row" onclick="openChat('${p.id}')">${av(p)}<div><div class="nm">${esc(p.display_name)}${badges(p)}</div><div class="mu">@${esc(p.username)}</div></div></div>`).join("")||'<p class="mu">Personne trouvé.</p>'}
+async function openChat(id){
+  view="chat";chatWith=id;document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v==="chat"));
+  const[{data:p},{data:ms}]=await Promise.all([sb.from("profiles").select("*").eq("id",id).single(),sb.from("messages").select("*").or(`and(sender.eq.${me.id},receiver.eq.${id}),and(sender.eq.${id},receiver.eq.${me.id})`).order("created_at").limit(300)]);
+  $("#mn").innerHTML=`<div class="row" style="margin-bottom:10px"><button class="btn g sm" onclick="go('chat')">←</button>${av(p)}<div class="nm">${esc(p.display_name)}${badges(p)}</div></div>
+  <div id="ms">${(ms||[]).map(m=>`<div class="bub ${m.sender===me.id?"me":"ot"}">${esc(m.content)}</div>`).join("")}</div>
+  <div class="row" style="position:sticky;bottom:0;background:var(--bg);padding-top:8px"><input id="mi" placeholder="Écris un message…" onkeydown="if(event.key==='Enter')send('${id}')"><button class="btn" onclick="send('${id}')">Envoyer</button></div>`;
+  $("#mn").scrollTop=$("#mn").scrollHeight;
+}
+async function send(id){const v=$("#mi").value.trim();if(!v)return;$("#mi").value="";const{error}=await sb.from("messages").insert({sender:me.id,receiver:id,content:v});if(error)toast(error.message)}
+
+/* ---------- PROFIL ---------- */
+async function openProfile(id){
+  view=id===me.id?"me":"prof";document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
+  const mn=$("#mn");const[{data:p},{data:ps},{count:fr},{count:fg},{data:isF}]=await Promise.all([
+    sb.from("profiles").select("*").eq("id",id).single(),
+    sb.from("posts").select("*,profiles(id,username,display_name,avatar_url,verified,role,premium_until),likes(user_id),comments(count)").eq("user_id",id).neq("kind","story").order("created_at",{ascending:false}).limit(30),
+    sb.from("follows").select("*",{count:"exact",head:true}).eq("following",id),sb.from("follows").select("*",{count:"exact",head:true}).eq("follower",id),
+    sb.from("follows").select("*").match({follower:me.id,following:id})]);
+  const mine=id===me.id;
+  mn.innerHTML=`<div class="card" style="text-align:center">${av(p,"big").replace("av big","av big\" style=\"margin:auto")}<div class="nm" style="font-size:20px;margin-top:8px">${esc(p.display_name)}${badges(p)}</div><div class="mu">@${esc(p.username)} · ${esc(p.city||"")}</div><p>${esc(p.bio||"")}</p>
+  <div class="row" style="justify-content:center"><span><b>${fr||0}</b> abonnés</span><span><b>${fg||0}</b> abonnements</span></div><div class="row" style="justify-content:center;margin-top:10px;flex-wrap:wrap">
+  ${mine?`<button class="btn sm" onclick="editProfile()">Modifier</button><button class="btn sm" onclick="premiumPage()">Premium</button>${me.role==="admin"?'<button class="btn r sm" onclick="adminPage()">Admin</button>':""}<button class="btn g sm" onclick="sb.auth.signOut().then(()=>{me=null;authScreen()})">Déconnexion</button>`
+  :`<button class="btn sm ${isF?.length?"g":""}" onclick="follow('${id}',${!!isF?.length})">${isF?.length?"Abonné":"S'abonner"}</button><button class="btn g sm" onclick="openChat('${id}')">Message</button>`}</div></div>`+(ps||[]).map(postHTML).join("");
+}
+async function follow(id,was){await(was?sb.from("follows").delete().match({follower:me.id,following:id}):sb.from("follows").insert({follower:me.id,following:id}));openProfile(id)}
+function editProfile(){$("#mn").innerHTML=`<div class="card"><input id="e1" placeholder="Nom affiché" value="${esc(me.display_name)}"><input id="e2" placeholder="Ville" value="${esc(me.city||"")}"><textarea id="e3" placeholder="Bio">${esc(me.bio||"")}</textarea><input id="e4" type="file" accept="image/*"><button class="btn" style="width:100%" onclick="saveProfile()">Enregistrer</button></div>`}
+async function saveProfile(){let avatar_url=me.avatar_url;const f=$("#e4").files[0];
+  if(f){const path=`${me.id}/avatar-${Date.now()}`;const u=await sb.storage.from("media").upload(path,f);if(!u.error)avatar_url=sb.storage.from("media").getPublicUrl(path).data.publicUrl}
+  const{error}=await sb.from("profiles").update({display_name:$("#e1").value.trim()||me.display_name,city:$("#e2").value.trim(),bio:$("#e3").value.trim(),avatar_url}).eq("id",me.id);
+  if(error)return toast(error.message);me=await loadMe();openProfile(me.id)}
+
+/* ---------- PREMIUM / MOBILE MONEY ---------- */
+async function premiumPage(){
+  const{data:pays}=await sb.from("payments").select("*").eq("user_id",me.id).order("created_at",{ascending:false}).limit(10);
+  const till=me.role==="admin"?"Illimité (créateur)":me.premium_until&&new Date(me.premium_until)>new Date()?"jusqu'au "+new Date(me.premium_until).toLocaleDateString("fr-FR"):"Non actif";
+  $("#mn").innerHTML=`<h3 style="margin:0 0 8px">Offres Congo Vibe</h3><div class="mu" style="margin-bottom:10px">Ton abonnement : <b style="color:var(--fg)">${till}</b></div>
+  ${Object.entries(PLANS).map(([k,p])=>`<div class="card"><div class="row sp"><div class="nm">${p.name}</div><div class="nm" style="color:var(--yel)">${p.price} $ / mois</div></div><div class="mu">${p.desc}</div></div>`).join("")}
+  <div class="card"><div class="nm">Payer par Mobile Money</div>
+  <ol class="mu" style="padding-left:18px"><li>Envoie le montant par Orange Money, M-Pesa ou Airtel Money au <b style="color:var(--yel)">${PAY_NUMBER}</b></li><li>Note l'ID de la transaction reçu par SMS</li><li>Remplis le formulaire ci-dessous. L'activation se fait après vérification.</li></ol>
+  <select id="pl">${Object.entries(PLANS).map(([k,p])=>`<option value="${k}">${p.name} (${p.price} $)</option>`).join("")}</select>
+  <select id="op"><option>Orange Money</option><option>M-Pesa</option><option>Airtel Money</option></select>
+  <input id="tx" placeholder="ID de la transaction"><button class="btn" style="width:100%" onclick="pay()">J'ai payé</button></div>
+  <h4>Mes paiements</h4>${(pays||[]).map(x=>`<div class="card row sp"><div>${PLANS[x.plan]?.name} · ${x.operator}<div class="mu">${esc(x.tx_id)}</div></div><span class="pill ${x.status==="approved"?"ok":x.status==="rejected"?"no":""}">${{pending:"En attente",approved:"Validé",rejected:"Refusé"}[x.status]}</span></div>`).join("")||'<p class="mu">Aucun paiement.</p>'}`;
+}
+async function pay(){const tx=$("#tx").value.trim();if(tx.length<4)return toast("Entre l'ID de transaction");const pl=$("#pl").value;
+  const{error}=await sb.from("payments").insert({user_id:me.id,plan:pl,amount:PLANS[pl].price,operator:$("#op").value,tx_id:tx});
+  if(error)return toast(error.message);toast("Paiement envoyé, en attente de validation");premiumPage()}
+
+/* ---------- ADMIN (créateur) ---------- */
+async function adminPage(){
+  const[{data:pays},{data:users}]=await Promise.all([sb.from("payments").select("*,profiles(username,display_name)").eq("status","pending").order("created_at"),sb.from("profiles").select("*").order("created_at",{ascending:false}).limit(50)]);
+  $("#mn").innerHTML=`<h3 style="margin:0 0 8px">Espace créateur</h3><h4>Paiements à valider (${(pays||[]).length})</h4>
+  ${(pays||[]).map(x=>`<div class="card"><div class="nm">${esc(x.profiles.display_name)} · ${PLANS[x.plan]?.name} · ${x.amount} $</div><div class="mu">${x.operator} · ID : <b style="color:var(--fg)">${esc(x.tx_id)}</b></div><div class="row" style="margin-top:8px"><button class="btn sm" onclick="appr(${x.id},true)">Valider</button><button class="btn r sm" onclick="appr(${x.id},false)">Refuser</button></div></div>`).join("")||'<p class="mu">Rien en attente.</p>'}
+  <h4>Utilisateurs (${(users||[]).length})</h4>${(users||[]).map(u=>`<div class="card row sp"><div class="nm">${esc(u.display_name)}${badges(u)}<div class="mu">@${esc(u.username)}</div></div>${u.role==="admin"?"":`<button class="btn g sm" onclick="verif('${u.id}',${!u.verified})">${u.verified?"Retirer ✓":"Vérifier ✓"}</button>`}</div>`).join("")}`;
+}
+async function appr(id,ok){const{error}=await sb.rpc("approve_payment",{pid:id,ok});if(error)return toast(error.message);toast(ok?"Activé":"Refusé");adminPage()}
+async function verif(id,v){await sb.from("profiles").update({verified:v}).eq("id",id);adminPage()}
+
+sb.auth.getSession().then(({data})=>data.session?boot():authScreen());
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
