@@ -139,7 +139,7 @@ main.noPad{padding:0;scroll-snap-type:y mandatory;overflow-y:scroll}main.chatmod
 .crow{display:flex;gap:12px;align-items:center;padding:12px 8px;border-radius:16px;animation:up .3s both}.crow:active{background:var(--glass2)}
 .bdg{background:var(--mint);color:#04241d;border-radius:99px;font-size:11px;font-weight:800;padding:1px 8px}.pv{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
 .sbar{display:flex;align-items:center;gap:8px;border-radius:18px;padding:2px 14px;margin-bottom:12px;color:var(--mute)}.sbar input{background:none;border:0;margin:0;box-shadow:none}.sbar input:focus{box-shadow:none;background:none}
-.bub::after{content:"";display:block;clear:both}</style>
+.bub::after{content:"";display:block;clear:both}.emb{aspect-ratio:9/16;max-height:560px;background:#000}.emb iframe{width:100%;height:100%;border:0;display:block}.reel .emb{aspect-ratio:auto;max-height:none}.tap{position:absolute;inset:0;z-index:2}.reel .rinfo,.reel .rside{z-index:3}.reel.e .rinfo{display:none}</style>
 </head>
 <body>
 <div id="app"></div>
@@ -162,6 +162,16 @@ const NI={home:`<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1
 const av=(p,c="")=>`<div class="av ${c}" onclick="openProfile('${p.id}')">${p.avatar_url?`<img alt="" src="${esc(p.avatar_url)}">`:esc((p.display_name||p.username||"?")[0].toUpperCase())}</div>`;
 const badges=p=>(p.verified||p.role==="admin"?'<span class="vb">✓</span>':"")+(p.role==="admin"?'<span class="pr">CRÉATEUR</span>':isPrem(p)?'<span class="pr">PREMIUM</span>':"");
 
+const VAPID="BNUZdrcNv-y4DyN_d1eKZGJhAfywRrB_qDPa0IUehyTMin794-caKMhooYHol674FkuMGw3pO30hm_ZtyD-Et5U";
+const u8=b=>{const r=atob((b+"=".repeat((4-b.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(r,c=>c.charCodeAt(0))};
+const canPush=()=>"serviceWorker"in navigator&&"PushManager"in window&&"Notification"in window;
+async function enableNotifs(quiet){if(!canPush())return quiet||toast("Notifications non prises en charge ici");
+  if(Notification.permission!=="granted"){const p=await Notification.requestPermission();if(p!=="granted")return toast("Notifications bloquées : autorise-les dans les réglages du site")}
+  try{const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(VAPID)});
+    const j=sub.toJSON();const{error}=await sb.from("push_subs").upsert({user_id:me.id,endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth},{onConflict:"endpoint"});if(error)throw error;
+    quiet===true||toast("Notifications activées");$("#nb")?.remove()}catch(e){quiet===true||toast("Activation impossible")}}
+const notifBanner=()=>canPush()&&Notification.permission==="default"?`<div class="card glass row sp" id="nb"><div><div class="nm">Active les notifications</div><div class="mu">Reçois tes messages même quand l'app est fermée.</div></div><button class="btn sm" onclick="enableNotifs()">Activer</button></div>`:"";
+function openFromHash(){const m=location.hash.match(/^#chat=([0-9a-f-]{36})$/);if(m){openChat(m[1]);history.replaceState(null,"",location.pathname);return true}return false}
 /* ---------- AUTH ---------- */
 function authScreen(mode="in"){
   app.innerHTML=`<div class="auth"><div class="logo">${LOGO}</div><h1>Congo <span style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Vibe</span></h1>
@@ -191,7 +201,8 @@ async function boot(){
     else if(view==="chat"&&!chatWith)renderChats();else if(m.receiver===me.id)toast("Nouveau message")})
   .on("postgres_changes",{event:"UPDATE",schema:"public",table:"messages"},p=>{const m=p.new;if(m.read_at&&m.sender===me.id)document.querySelectorAll(`[data-m="${m.id}"]`).forEach(e=>e.classList.add("rd"))}).subscribe();
   chT=sb.channel("typing").on("broadcast",{event:"t"},p=>{if(p.payload.to===me.id&&p.payload.from===chatWith)showTyping()}).subscribe();
-  go("home");
+  if(canPush()&&Notification.permission==="granted")enableNotifs(true);
+  openFromHash()||go("home");
 }
 function setNav(v){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v&&v!=="new"))}
 function go(v){view=v;chatWith=null;cleanMain();setNav(v);({home:()=>renderFeed("all"),news:()=>renderFeed("news"),video:renderVideos,new:renderNew,chat:renderChats,me:()=>openProfile(me.id)})[v]();$("#mn").scrollTop=0}
@@ -239,7 +250,7 @@ async function renderFeed(kind){
     mn.innerHTML=`<div class="h">À la une en RDC</div><div id="nw"><div class="skel" style="height:340px"></div></div><div class="h" style="margin-top:20px">Médias vérifiés sur Congo Vibe</div>${(posts||[]).map(postHTML).join("")||empty}`;
     loadNews().then(paintNews);initVideos(mn);return;
   }
-  mn.innerHTML=`<div class="tabs"><button class="${tab==="all"?"on":""}" onclick="tab='all';renderFeed('all')">Pour toi</button><button class="${tab==="following"?"on":""}" onclick="tab='following';renderFeed('all')">Abonnements</button></div>
+  mn.innerHTML=`${notifBanner()}<div class="tabs"><button class="${tab==="all"?"on":""}" onclick="tab='all';renderFeed('all')">Pour toi</button><button class="${tab==="following"?"on":""}" onclick="tab='following';renderFeed('all')">Abonnements</button></div>
   <div id="strip"></div>${window._stories.length?`<div class="stories">${window._stories.map(s=>`<div class="st" onclick="viewStory(${s.id})">${av(s.profiles)}<div style="margin-top:6px">${esc(s.profiles.username)}</div></div>`).join("")}</div>`:""}
   ${(posts||[]).map(postHTML).join("")||empty}`;
   initVideos(mn);
@@ -248,12 +259,19 @@ async function renderFeed(kind){
 function vidEl(url,m,cls=""){m=m||{};return `<div class="vw ${cls}"><video src="${esc(url)}" preload="metadata" playsinline loop muted data-s="${+m.s||0}" data-e="${+m.e||0}" data-sp="${+m.sp||1}" style="filter:${FILT[m.f]||"none"}"></video>${m.t?`<div class="ov">${esc(m.t)}</div>`:""}<div class="pp">${ic(I.play)}</div></div>`}
 const IO=new IntersectionObserver(es=>es.forEach(en=>{const v=en.target;if(en.isIntersecting&&en.intersectionRatio>.6)playV(v);else v.pause()}),{threshold:[0,.6]});
 function playV(v){v.muted=v.closest(".reel")?vmuted:true;v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})})}
-function initVideos(root){root.querySelectorAll("video[data-sp]").forEach(v=>{if(v._i)return;v._i=1;const s=+v.dataset.s,e=+v.dataset.e,sp=+v.dataset.sp,w=v.parentElement;
+function initVideos(root){root.querySelectorAll("iframe[data-src]").forEach(f=>{if(!f._i){f._i=1;IE.observe(f)}});root.querySelectorAll("video[data-sp]").forEach(v=>{if(v._i)return;v._i=1;const s=+v.dataset.s,e=+v.dataset.e,sp=+v.dataset.sp,w=v.parentElement;
   v.addEventListener("loadedmetadata",()=>{v.playbackRate=sp;if(s)v.currentTime=s});
   v.addEventListener("timeupdate",()=>{if(e&&v.currentTime>=e)v.currentTime=s});
   v.addEventListener("play",()=>{v.playbackRate=sp;w.classList.add("playing")});v.addEventListener("pause",()=>w.classList.remove("playing"));
   w.addEventListener("click",()=>v.paused?playV(v):v.pause());IO.observe(v)})}
-function mediaHTML(p){return p.media_url?(p.media_type==="video"?vidEl(p.media_url,p.meta):`<img class="m" alt="" loading="lazy" src="${esc(p.media_url)}">`):""}
+const okId=i=>/^\d{10,22}$/.test(String(i));
+function embedEl(m,reel){if(!okId(m?.id))return"";const u=`https://www.tiktok.com/player/v1/${m.id}?loop=1&rel=0&music_info=1&description=1`;
+  return `<div class="vw emb ${reel?"full":""}"><iframe ${reel?`data-src="${u}"`:`src="${u}" loading="lazy"`} allow="autoplay; fullscreen; encrypted-media" allowfullscreen title="Vidéo TikTok"></iframe>${reel?'<div class="tap" onclick="tapEmb(this)"></div>':""}</div>`}
+function tapEmb(el){el.style.display="none";setTimeout(()=>el.style.display="",6000)}
+const IE=new IntersectionObserver(es=>es.forEach(en=>{const f=en.target;if(en.isIntersecting&&en.intersectionRatio>.6){if(!f.src||f.src==="about:blank")f.src=f.dataset.src}else if(f.src&&f.src!=="about:blank")f.src="about:blank"}),{threshold:[0,.6]});
+async function ttInfo(url){let r;try{r=await fetch(SB_URL+"/functions/v1/tt?url="+encodeURIComponent(url),{headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY}})}catch(e){throw new Error("Réseau indisponible")}
+  const j=await r.json();if(!r.ok||!j.id)throw new Error(j.error||"Lien TikTok invalide");return j}
+function mediaHTML(p){if(p.media_type==="embed")return embedEl(p.meta)+`<div class="mu" style="margin-top:6px">Vidéo TikTok${p.meta?.author?" · @"+esc(p.meta.author):""}</div>`;return p.media_url?(p.media_type==="video"?vidEl(p.media_url,p.meta):`<img class="m" alt="" loading="lazy" src="${esc(p.media_url)}">`):""}
 function postHTML(p){
   const liked=p.likes.some(l=>l.user_id===me.id),n=p.comments[0]?.count||0;
   return `<div class="card glass post" id="p${p.id}"><div class="row">${av(p.profiles)}<div style="flex:1;min-width:0"><div class="nm">${esc(p.profiles.display_name)}${badges(p.profiles)}</div><div class="mu">@${esc(p.profiles.username)} · ${ago(p.created_at)}${p.kind==="news"?" · Actu":""}${p.boosted?" · Sponsorisé":""}</div></div>
@@ -282,12 +300,12 @@ function viewStory(id){const s=(window._stories||[]).find(x=>x.id===id);if(!s)re
 /* ---------- VIDÉOS (style TikTok) ---------- */
 async function renderVideos(){
   const mn=$("#mn");mn.className="noPad";$("#app").classList.remove("inchat");mn.innerHTML='<div class="skel" style="margin:80px 16px;height:300px"></div>';
-  const{data,error}=await sb.from("posts").select("*,"+PROF+",likes(user_id),comments(count)").eq("media_type","video").neq("kind","story").order("created_at",{ascending:false}).limit(30);
+  const{data,error}=await sb.from("posts").select("*,"+PROF+",likes(user_id),comments(count)").in("media_type",["video","embed"]).neq("kind","story").order("created_at",{ascending:false}).limit(30);
   if(view!=="video")return;
   if(error)return mn.innerHTML=`<div class="err" style="margin:80px 16px">Impossible de charger les vidéos.<br><button class="btn sm" style="margin-top:8px" onclick="renderVideos()">Réessayer</button></div>`;
   if(!data.length)return mn.innerHTML=`<div class="empty" style="padding-top:120px"><b style="color:var(--fg);font-size:18px">Pas encore de vidéo</b><br>Publie la première vidéo de Congo Vibe.<br><button class="btn" style="margin-top:14px" onclick="go('new')">Créer une vidéo</button></div>`;
   const H=mn.clientHeight;
-  mn.innerHTML=data.map(p=>{const liked=p.likes.some(l=>l.user_id===me.id);return `<section class="reel" id="p${p.id}" style="height:${H}px">${vidEl(p.media_url,p.meta,"full")}<div class="rsh"></div>
+  mn.innerHTML=data.map(p=>{const liked=p.likes.some(l=>l.user_id===me.id);return `<section class="reel ${p.media_type==="embed"?"e":""}" id="p${p.id}" style="height:${H}px">${p.media_type==="embed"?embedEl(p.meta,1):vidEl(p.media_url,p.meta,"full")}<div class="rsh"></div>
   <div class="rinfo"><div class="row" style="margin-bottom:8px">${av(p.profiles)}<div><div class="nm">${esc(p.profiles.display_name)}${badges(p.profiles)}</div><div class="mu" style="color:#d5dcf0">@${esc(p.profiles.username)}</div></div></div><div style="white-space:pre-wrap">${esc(p.content)}</div></div>
   <div class="rside"><button class="rb ${liked?"on":""}" onclick="likeP(${p.id},this)">${ic(I.heart)}<span>${p.likes.length}</span></button><button class="rb" onclick="comments(${p.id})">${ic(I.cmt)}<span>${p.comments[0]?.count||0}</span></button><button class="rb" onclick="share()">${ic(I.share)}<span>Partager</span></button><button class="rb" onclick="vmuted=!vmuted;document.querySelectorAll('.reel video').forEach(v=>v.muted=vmuted);toast(vmuted?'Son coupé':'Son activé')">${ic(I.snd)}<span>Son</span></button></div></section>`}).join("");
   initVideos(mn);
@@ -299,7 +317,7 @@ function renderNew(){
   const mn=cleanMain(),canNews=me.verified||me.role==="admin",prem=isPrem(me);FILE=null;
   mn.innerHTML=`<div class="h">Créer</div><div class="card glass"><textarea id="tx" maxlength="2000" placeholder="Quoi de neuf à Kinshasa ?"></textarea>
   <div class="row wrap" style="margin:6px 0"><label class="btn g sm up">${ic(I.clip)} Photo / vidéo<input id="fl" type="file" accept="image/*,video/*" hidden onchange="pickFile(this)"></label><label class="btn g sm up">${ic(I.vid)} Filmer<input id="fc" type="file" accept="video/*" capture="environment" hidden onchange="pickFile(this)"></label></div>
-  <div id="prev"></div>
+  <div id="prev"></div><input id="tl" placeholder="Ou colle un lien de vidéo TikTok" inputmode="url" autocomplete="off">
   <select id="kd"><option value="post">Publication</option>${canNews?'<option value="news">Actualité (fil congolais)</option>':""}<option value="story">Story 48 h${prem?"":" (Premium)"}</option></select>
   <label class="row mu" style="margin:8px 0"><input id="bo" type="checkbox"> Booster en haut du fil${prem?"":" (Premium)"}</label>
   <button class="btn full" id="pb" onclick="publish()">Publier</button></div>
@@ -321,14 +339,15 @@ function setF(k,b){ED.f=k;$("#pv").style.filter=FILT[k]||"none";b.parentNode.que
 function setSp(x,b){ED.sp=x;$("#pv").playbackRate=x;b.parentNode.querySelectorAll("button").forEach(y=>y.classList.toggle("on",y===b))}
 function trim(){let s=+$("#t0").value,e=+$("#t1").value;if(e-s<1){if(document.activeElement.id==="t0")s=Math.max(0,e-1);else e=Math.min(ED.d,s+1);$("#t0").value=s;$("#t1").value=e}ED.s=s;ED.e=e;$("#tl").textContent=fmt(s)+" - "+fmt(e);const v=$("#pv");if(v.currentTime<s||v.currentTime>e)v.currentTime=s}
 async function publish(){
-  const content=$("#tx").value.trim();if(!content&&!FILE)return toast("Écris quelque chose ou ajoute un média");
+  const content=$("#tx").value.trim();if(!content&&!FILE&&!($("#tl")?.value.trim()))return toast("Écris quelque chose ou ajoute un média");
   $("#pb").disabled=true;$("#pb").textContent="Envoi en cours…";let media_url=null,media_type="image",meta={};
+  const tl=($("#tl")?.value||"").trim();if(tl){try{const e=await ttInfo(tl);media_url=tl;media_type="embed";meta={id:e.id,author:e.author}}catch(er){$("#pb").disabled=false;$("#pb").textContent="Publier";return toast(er.message)}}
   if(FILE){const path=`${me.id}/${Date.now()}-${FILE.name.replace(/[^\w.]/g,"_")}`;const u=await sb.storage.from("media").upload(path,FILE,{contentType:FILE.type||undefined});if(u.error){$("#pb").disabled=false;$("#pb").textContent="Publier";return toast(u.error.message)}
     media_url=sb.storage.from("media").getPublicUrl(path).data.publicUrl;
     if(FILE.type.startsWith("video/")){media_type="video";meta={f:ED.f,sp:ED.sp,s:ED.s,t:ED.t,e:ED.e&&ED.e<ED.d-.2?ED.e:0}}}
   const{error}=await sb.from("posts").insert({user_id:me.id,content,media_url,media_type,meta,kind:$("#kd").value,boosted:$("#bo").checked});
   $("#pb").disabled=false;$("#pb").textContent="Publier";if(error)return toast(error.message.includes("Premium")?"Fonction réservée aux membres Premium":error.message);
-  toast("Publié !");go($("#kd").value==="news"?"news":media_type==="video"?"video":"home");
+  toast("Publié !");go($("#kd").value==="news"?"news":["video","embed"].includes(media_type)?"video":"home");
 }
 
 /* ---------- MESSAGES (style WhatsApp) ---------- */
@@ -413,7 +432,7 @@ async function openProfile(id){
   const mine=id===me.id;
   mn.innerHTML=`<div class="card glass" style="text-align:center"><div class="cover"></div>${av(p,"big")}<div class="nm" style="font:800 21px var(--disp);margin-top:10px">${esc(p.display_name)}${badges(p)}</div><div class="mu">@${esc(p.username)}${p.city?" · "+esc(p.city):""}</div><p>${esc(p.bio||"")}</p>
   <div class="row" style="justify-content:center;gap:22px"><span><b>${fr||0}</b> <span class="mu">abonnés</span></span><span><b>${fg||0}</b> <span class="mu">abonnements</span></span></div><div class="row wrap" style="justify-content:center;margin-top:14px">
-  ${mine?`<button class="btn sm" onclick="editProfile()">Modifier</button><button class="btn sm" onclick="premiumPage()">Premium</button>${me.role==="admin"?'<button class="btn r sm" onclick="adminPage()">Espace créateur</button>':""}<button class="btn g sm" onclick="sb.auth.signOut().then(()=>{me=null;authScreen()})">Déconnexion</button>`
+  ${mine?`<button class="btn sm" onclick="editProfile()">Modifier</button><button class="btn sm" onclick="premiumPage()">Premium</button>${canPush()&&Notification.permission!=="granted"?'<button class="btn g sm" onclick="enableNotifs()">Notifications</button>':""}${me.role==="admin"?'<button class="btn r sm" onclick="adminPage()">Espace créateur</button>':""}<button class="btn g sm" onclick="sb.auth.signOut().then(()=>{me=null;authScreen()})">Déconnexion</button>`
   :`<button class="btn sm ${isF?.length?"g":""}" onclick="follow('${id}',${!!isF?.length})">${isF?.length?"Abonné":"S'abonner"}</button><button class="btn g sm" onclick="openChat('${id}')">Message</button>`}</div></div>`+((ps||[]).map(postHTML).join("")||'<div class="empty">Aucune publication.</div>');
 }
 async function follow(id,was){await(was?sb.from("follows").delete().match({follower:me.id,following:id}):sb.from("follows").insert({follower:me.id,following:id}));openProfile(id)}
@@ -444,15 +463,18 @@ async function pay(){const tx=$("#tx").value.trim();if(tx.length<4)return toast(
 /* ---------- ESPACE CRÉATEUR ---------- */
 async function adminPage(){
   const[{data:pays},{data:users}]=await Promise.all([sb.from("payments").select("*,profiles!user_id(username,display_name)").eq("status","pending").order("created_at"),sb.from("profiles").select("*").order("created_at",{ascending:false}).limit(50)]);
-  $("#mn").innerHTML=`<div class="h">Espace créateur</div><div class="mu" style="margin:-6px 0 12px">Paiements à valider : ${(pays||[]).length}</div>
+  $("#mn").innerHTML=`<div class="h">Espace créateur</div><div class="card glass"><div class="nm">Importer des vidéos TikTok</div><div class="mu" style="margin:4px 0 8px">Un lien par ligne : tes vidéos ou celles que tu as le droit d'utiliser.</div><textarea id="ttl" placeholder="https://www.tiktok.com/@manassentambwa4/video/..."></textarea><button class="btn full" id="ttb" onclick="bulkTT()">Importer dans Vidéos</button></div><div class="mu" style="margin:-6px 0 12px">Paiements à valider : ${(pays||[]).length}</div>
   ${(pays||[]).map(x=>`<div class="card glass"><div class="nm">${esc(x.profiles.display_name)} · ${PLANS[x.plan]?.name} · ${x.amount} $</div><div class="mu">${esc(x.operator)} · ID : <b style="color:var(--fg)">${esc(x.tx_id)}</b></div><div class="row" style="margin-top:10px"><button class="btn sm" onclick="appr(${x.id},true)">Valider</button><button class="btn r sm" onclick="appr(${x.id},false)">Refuser</button></div></div>`).join("")||'<div class="empty">Aucun paiement en attente.</div>'}
   <div class="h">Utilisateurs (${(users||[]).length})</div>${(users||[]).map(u=>`<div class="card glass row sp"><div class="nm">${esc(u.display_name)}${badges(u)}<div class="mu">@${esc(u.username)}</div></div>${u.role==="admin"?"":`<button class="btn g sm" onclick="verif('${u.id}',${!u.verified})">${u.verified?"Retirer ✓":"Vérifier ✓"}</button>`}</div>`).join("")}`;
 }
+async function bulkTT(){const ls=$("#ttl").value.split(/\s+/).filter(x=>/^https?:\/\//.test(x));if(!ls.length)return toast("Colle au moins un lien");const b=$("#ttb");b.disabled=true;let ok=0;
+  for(const u of ls){b.textContent="Import "+(ok+1)+"/"+ls.length+"…";try{const e=await ttInfo(u);const{error}=await sb.from("posts").insert({user_id:me.id,content:e.title||"",media_url:u,media_type:"embed",meta:{id:e.id,author:e.author},kind:"post"});if(!error)ok++}catch(er){}}
+  b.disabled=false;b.textContent="Importer dans Vidéos";toast(ok+" vidéo(s) importée(s)");$("#ttl").value=""}
 async function appr(id,ok){const{error}=await sb.rpc("approve_payment",{pid:id,ok});if(error)return toast(error.message);toast(ok?"Activé":"Refusé");adminPage()}
 async function verif(id,v){await sb.from("profiles").update({verified:v}).eq("id",id);adminPage()}
 
 sb.auth.getSession().then(({data})=>data.session?boot():authScreen()).catch(()=>authScreen());
-if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker"in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});navigator.serviceWorker.addEventListener("message",e=>{if(e.data?.chat&&me)openChat(e.data.chat)})}
 </script>
 </body>
 </html>
