@@ -288,19 +288,12 @@ async function renderFeed(kind){
 function vidEl(url,m,cls=""){m=m||{};return `<div class="vw ${cls}"><video src="${esc(url)}" preload="metadata" playsinline loop muted data-s="${+m.s||0}" data-e="${+m.e||0}" data-sp="${+m.sp||1}" style="filter:${FILT[m.f]||"none"}"></video>${m.t?`<div class="ov">${esc(m.t)}</div>`:""}<div class="pp">${ic(I.play)}</div></div>`}
 const IO=new IntersectionObserver(es=>es.forEach(en=>{const v=en.target;if(en.isIntersecting&&en.intersectionRatio>.6)playV(v);else v.pause()}),{threshold:[0,.6]});
 function playV(v){v.muted=v.closest(".reel")?vmuted:true;v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})})}
-function initVideos(root){root.querySelectorAll("iframe[data-src]").forEach(f=>{if(!f._i){f._i=1;IE.observe(f)}});root.querySelectorAll("video[data-sp]").forEach(v=>{if(v._i)return;v._i=1;const s=+v.dataset.s,e=+v.dataset.e,sp=+v.dataset.sp,w=v.parentElement;
+function initVideos(root){root.querySelectorAll("video[data-sp]").forEach(v=>{if(v._i)return;v._i=1;const s=+v.dataset.s,e=+v.dataset.e,sp=+v.dataset.sp,w=v.parentElement;
   v.addEventListener("loadedmetadata",()=>{v.playbackRate=sp;if(s)v.currentTime=s});
   v.addEventListener("timeupdate",()=>{if(e&&v.currentTime>=e)v.currentTime=s});
   v.addEventListener("play",()=>{v.playbackRate=sp;w.classList.add("playing")});v.addEventListener("pause",()=>w.classList.remove("playing"));
   w.addEventListener("click",()=>v.paused?playV(v):v.pause());IO.observe(v)})}
-const okId=i=>/^\d{10,22}$/.test(String(i));
-function embedEl(m,reel){if(!okId(m?.id))return"";const u=`https://www.tiktok.com/player/v1/${m.id}?loop=1&rel=0&music_info=1&description=1`;
-  return `<div class="vw emb ${reel?"full":""}"><iframe ${reel?`data-src="${u}"`:`src="${u}" loading="lazy"`} allow="autoplay; fullscreen; encrypted-media" allowfullscreen title="Vidéo TikTok"></iframe>${reel?'<div class="tap" onclick="tapEmb(this)"></div>':""}</div>`}
-function tapEmb(el){el.style.display="none";setTimeout(()=>el.style.display="",6000)}
-const IE=new IntersectionObserver(es=>es.forEach(en=>{const f=en.target;if(en.isIntersecting&&en.intersectionRatio>.6){if(!f.src||f.src==="about:blank")f.src=f.dataset.src}else if(f.src&&f.src!=="about:blank")f.src="about:blank"}),{threshold:[0,.6]});
-async function ttInfo(url){let r;try{r=await fetch(SB_URL+"/functions/v1/tt?url="+encodeURIComponent(url),{headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY}})}catch(e){throw new Error("Réseau indisponible")}
-  const j=await r.json();if(!r.ok||!j.id)throw new Error(j.error||"Lien TikTok invalide");return j}
-function mediaHTML(p){if(p.media_type==="embed")return embedEl(p.meta)+`<div class="mu" style="margin-top:6px">Vidéo TikTok${p.meta?.author?" · @"+esc(p.meta.author):""}</div>`;return p.media_url?(p.media_type==="video"?vidEl(p.media_url,p.meta):`<img class="m" alt="" loading="lazy" src="${esc(p.media_url)}">`):""}
+function mediaHTML(p){if(p.media_type==="embed")return `<div class="video-note">Cette ancienne vidéo externe n’est plus intégrée. Partage une vidéo directement depuis ton appareil.</div>`;return p.media_url?(p.media_type==="video"?vidEl(p.media_url,p.meta):`<img class="m" alt="" loading="lazy" src="${esc(p.media_url)}">`):""}
 function postHTML(p){
   const liked=p.likes.some(l=>l.user_id===me.id),n=p.comments[0]?.count||0;
   return `<div class="card glass post" id="p${p.id}"><div class="row">${av(p.profiles)}<div style="flex:1;min-width:0"><div class="nm">${esc(p.profiles.display_name)}${badges(p.profiles)}</div><div class="mu">@${esc(p.profiles.username)} · ${ago(p.created_at)}${p.kind==="news"?" · Actu":""}${p.boosted?" · Sponsorisé":""}</div></div>
