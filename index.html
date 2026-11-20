@@ -221,7 +221,7 @@ async function loadMe(){const{data:{user}}=await sb.auth.getUser();if(!user)retu
 async function boot(){
   me=await loadMe();if(!me)return authScreen();
   app.innerHTML=`<div class="orbs"><i></i><i></i><i></i></div><header><div class="brand">${LOGO}<div class="word">Congo <span>Vibe</span></div></div><div class="chip glass" id="who" onclick="go('me')"></div></header><main id="mn"></main>
-  <nav class="glass">${[["home","Accueil"],["video","Vidéos"],["new","Créer"],["news","Actus"],["chat","Messages"]].map(([k,l])=>`<button data-v="${k}" class="${k==="new"?"mid":""}" aria-label="${l}" onclick="go('${k}')"><svg viewBox="0 0 24 24">${NI[k]}</svg>${k==="new"?"":l}</button>`).join("")}</nav>`;
+  <nav class="glass">${[["home","Accueil"],["video","Découvrir"],["new","Créer"],["news","Actus"],["chat","Messages"]].map(([k,l])=>`<button data-v="${k}" class="${k==="new"?"mid":""}" aria-label="${l}" onclick="go('${k}')"><svg viewBox="0 0 24 24">${NI[k]}</svg>${k==="new"?"":l}</button>`).join("")}</nav>`;
   $("#who").textContent="@"+me.username;
   sb.channel("msgs").on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},p=>{const m=p.new;if(m.receiver!==me.id&&m.sender!==me.id)return;
     if(view==="chat"&&chatWith&&(m.sender===chatWith||m.receiver===chatWith)){appendMsg(m);if(m.receiver===me.id)sb.rpc("mark_read",{other:chatWith})}
@@ -387,7 +387,7 @@ function renderNew(){
   const mn=cleanMain(),canNews=me.verified||me.role==="admin",prem=isPrem(me);FILE=null;
   mn.innerHTML=`<div class="h">Créer</div><div class="card glass"><textarea id="tx" maxlength="2000" placeholder="Quoi de neuf à Kinshasa ?"></textarea>
   <div class="row wrap" style="margin:6px 0"><label class="btn g sm up">${ic(I.clip)} Photo / vidéo<input id="fl" type="file" accept="image/*,video/*" hidden onchange="pickFile(this)"></label><label class="btn g sm up">${ic(I.vid)} Filmer<input id="fc" type="file" accept="video/*" capture="environment" hidden onchange="pickFile(this)"></label></div>
-  <div id="prev"></div><input id="tl" placeholder="Ou colle un lien de vidéo TikTok" inputmode="url" autocomplete="off">
+  <div id="prev"></div><div class="mu" style="margin:6px 0 0">Les vidéos sont importées depuis ton appareil. Format MP4 recommandé.</div>
   <select id="kd"><option value="post">Publication</option>${canNews?'<option value="news">Actualité (fil congolais)</option>':""}<option value="story">Story 48 h${prem?"":" (Premium)"}</option></select>
   <label class="row mu" style="margin:8px 0"><input id="bo" type="checkbox"> Booster en haut du fil${prem?"":" (Premium)"}</label>
   <button class="btn full" id="pb" onclick="publish()">Publier</button></div>
@@ -409,15 +409,14 @@ function setF(k,b){ED.f=k;$("#pv").style.filter=FILT[k]||"none";b.parentNode.que
 function setSp(x,b){ED.sp=x;$("#pv").playbackRate=x;b.parentNode.querySelectorAll("button").forEach(y=>y.classList.toggle("on",y===b))}
 function trim(){let s=+$("#t0").value,e=+$("#t1").value;if(e-s<1){if(document.activeElement.id==="t0")s=Math.max(0,e-1);else e=Math.min(ED.d,s+1);$("#t0").value=s;$("#t1").value=e}ED.s=s;ED.e=e;$("#tl").textContent=fmt(s)+" - "+fmt(e);const v=$("#pv");if(v.currentTime<s||v.currentTime>e)v.currentTime=s}
 async function publish(){
-  const content=$("#tx").value.trim();if(!content&&!FILE&&!($("#tl")?.value.trim()))return toast("Écris quelque chose ou ajoute un média");
+  const content=$("#tx").value.trim();if(!content&&!FILE)return toast("Écris quelque chose ou ajoute un média");
   $("#pb").disabled=true;$("#pb").textContent="Envoi en cours…";let media_url=null,media_type="image",meta={};
-  const tl=($("#tl")?.value||"").trim();if(tl){try{const e=await ttInfo(tl);media_url=tl;media_type="embed";meta={id:e.id,author:e.author}}catch(er){$("#pb").disabled=false;$("#pb").textContent="Publier";return toast(er.message)}}
   if(FILE){const path=`${me.id}/${Date.now()}-${FILE.name.replace(/[^\w.]/g,"_")}`;const u=await sb.storage.from("media").upload(path,FILE,{contentType:FILE.type||undefined});if(u.error){$("#pb").disabled=false;$("#pb").textContent="Publier";return toast(u.error.message)}
     media_url=sb.storage.from("media").getPublicUrl(path).data.publicUrl;
     if(FILE.type.startsWith("video/")){media_type="video";meta={f:ED.f,sp:ED.sp,s:ED.s,t:ED.t,e:ED.e&&ED.e<ED.d-.2?ED.e:0}}}
   const{error}=await sb.from("posts").insert({user_id:me.id,content,media_url,media_type,meta,kind:$("#kd").value,boosted:$("#bo").checked});
   $("#pb").disabled=false;$("#pb").textContent="Publier";if(error)return toast(error.message.includes("Premium")?"Fonction réservée aux membres Premium":error.message);
-  toast("Publié !");go($("#kd").value==="news"?"news":["video","embed"].includes(media_type)?"video":"home");
+  toast("Publié !");go($("#kd").value==="news"?"news":media_type==="video"?"video":"home");
 }
 
 /* ---------- MESSAGES (style WhatsApp) ---------- */
@@ -538,13 +537,10 @@ async function pay(){const tx=$("#tx").value.trim();if(tx.length<4)return toast(
 /* ---------- ESPACE CRÉATEUR ---------- */
 async function adminPage(){
   const[{data:pays},{data:users}]=await Promise.all([sb.from("payments").select("*,profiles!user_id(username,display_name)").eq("status","pending").order("created_at"),sb.from("profiles").select("*").order("created_at",{ascending:false}).limit(50)]);
-  $("#mn").innerHTML=`<div class="h">Espace créateur</div><div class="card glass"><div class="nm">Importer des vidéos TikTok</div><div class="mu" style="margin:4px 0 8px">Un lien par ligne : tes vidéos ou celles que tu as le droit d'utiliser.</div><textarea id="ttl" placeholder="https://www.tiktok.com/@manassentambwa4/video/..."></textarea><button class="btn full" id="ttb" onclick="bulkTT()">Importer dans Vidéos</button></div><div class="mu" style="margin:-6px 0 12px">Paiements à valider : ${(pays||[]).length}</div>
+  $("#mn").innerHTML=`<div class="h">Espace créateur</div><div class="card glass"><div class="card glass"><div class="nm">Espace de gestion Congo Vibe</div><div class="mu">Gère les membres et les paiements ici. Les vidéos se publient depuis l’onglet Créer.</div></div><div class="mu" style="margin:-6px 0 12px">Paiements à valider : ${(pays||[]).length}</div>
   ${(pays||[]).map(x=>`<div class="card glass"><div class="nm">${esc(x.profiles.display_name)} · ${PLANS[x.plan]?.name} · ${x.amount} $</div><div class="mu">${esc(x.operator)} · ID : <b style="color:var(--fg)">${esc(x.tx_id)}</b></div><div class="row" style="margin-top:10px"><button class="btn sm" onclick="appr(${x.id},true)">Valider</button><button class="btn r sm" onclick="appr(${x.id},false)">Refuser</button></div></div>`).join("")||'<div class="empty">Aucun paiement en attente.</div>'}
   <div class="h">Utilisateurs (${(users||[]).length})</div>${(users||[]).map(u=>`<div class="card glass row sp"><div class="nm">${esc(u.display_name)}${badges(u)}<div class="mu">@${esc(u.username)}</div></div>${u.role==="admin"?"":`<button class="btn g sm" onclick="verif('${u.id}',${!u.verified})">${u.verified?"Retirer ✓":"Vérifier ✓"}</button>`}</div>`).join("")}`;
 }
-async function bulkTT(){const ls=$("#ttl").value.split(/\s+/).filter(x=>/^https?:\/\//.test(x));if(!ls.length)return toast("Colle au moins un lien");const b=$("#ttb");b.disabled=true;let ok=0;
-  for(const u of ls){b.textContent="Import "+(ok+1)+"/"+ls.length+"…";try{const e=await ttInfo(u);const{error}=await sb.from("posts").insert({user_id:me.id,content:e.title||"",media_url:u,media_type:"embed",meta:{id:e.id,author:e.author},kind:"post"});if(!error)ok++}catch(er){}}
-  b.disabled=false;b.textContent="Importer dans Vidéos";toast(ok+" vidéo(s) importée(s)");$("#ttl").value=""}
 async function appr(id,ok){const{error}=await sb.rpc("approve_payment",{pid:id,ok});if(error)return toast(error.message);toast(ok?"Activé":"Refusé");adminPage()}
 async function verif(id,v){await sb.from("profiles").update({verified:v}).eq("id",id);adminPage()}
 
