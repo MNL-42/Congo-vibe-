@@ -153,7 +153,7 @@ const sb=supabase.createClient(SB_URL,SB_KEY);
 const $=s=>document.querySelector(s),app=$("#app");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const safeUrl=u=>/^https?:\/\//i.test(u)?esc(u):"#";
-let me=null,view="home",tab="all",chatWith=null,newsSrc="Tous",NEWS=null;
+let me=null,view="home",tab="all",chatWith=null,newsSrc="Tous",NEWS=null,presenceChannel=null,onlineUsers=new Set();
 const isPrem=p=>p&&(p.role==="admin"||(p.premium_until&&new Date(p.premium_until)>new Date()));
 const ago=d=>{const s=(Date.now()-new Date(d))/1e3;return s<60?"à l'instant":s<3600?"il y a "+Math.floor(s/60)+" min":s<86400?"il y a "+Math.floor(s/3600)+" h":"il y a "+Math.floor(s/86400)+" j"};
 function toast(t){const e=document.createElement("div");e.className="toast";e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),2800)}
