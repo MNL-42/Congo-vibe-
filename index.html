@@ -319,20 +319,68 @@ function viewStory(id){const s=(window._stories||[]).find(x=>x.id===id);if(!s)re
   o.innerHTML=`<div class="sbox"><div class="row" style="margin-bottom:12px">${av(s.profiles)}<div class="nm">@${esc(s.profiles.username)}</div></div>${s.media_url?(s.media_type==="video"?vidEl(s.media_url,s.meta,"sv"):`<img alt="" src="${esc(s.media_url)}">`):""}<p style="font:700 20px var(--disp)">${esc(s.content)}</p><p class="mu">Touche pour fermer</p></div>`;
   document.body.appendChild(o);initVideos(o);const v=o.querySelector("video");v&&(v.muted=false,v.play().catch(()=>{v.muted=true;v.play()}))}
 
-/* ---------- VIDÉOS (style TikTok) ---------- */
-async function renderVideos(){
-  const mn=$("#mn");mn.className="noPad";$("#app").classList.remove("inchat");mn.innerHTML='<div class="skel" style="margin:80px 16px;height:300px"></div>';
-  const{data,error}=await sb.from("posts").select("*,"+PROF+",likes(user_id),comments(count)").in("media_type",["video","embed"]).neq("kind","story").order("created_at",{ascending:false}).limit(30);
-  if(view!=="video")return;
-  if(error)return mn.innerHTML=`<div class="err" style="margin:80px 16px">Impossible de charger les vidéos.<br><button class="btn sm" style="margin-top:8px" onclick="renderVideos()">Réessayer</button></div>`;
-  if(!data.length)return mn.innerHTML=`<div class="empty" style="padding-top:120px"><b style="color:var(--fg);font-size:18px">Pas encore de vidéo</b><br>Publie la première vidéo de Congo Vibe.<br><button class="btn" style="margin-top:14px" onclick="go('new')">Créer une vidéo</button></div>`;
-  const H=mn.clientHeight;
-  mn.innerHTML=data.map(p=>{const liked=p.likes.some(l=>l.user_id===me.id);return `<section class="reel ${p.media_type==="embed"?"e":""}" id="p${p.id}" style="height:${H}px">${p.media_type==="embed"?embedEl(p.meta,1):vidEl(p.media_url,p.meta,"full")}<div class="rsh"></div>
-  <div class="rinfo"><div class="row" style="margin-bottom:8px">${av(p.profiles)}<div><div class="nm">${esc(p.profiles.display_name)}${badges(p.profiles)}</div><div class="mu" style="color:#d5dcf0">@${esc(p.profiles.username)}</div></div></div><div style="white-space:pre-wrap">${esc(p.content)}</div></div>
-  <div class="rside"><button class="rb ${liked?"on":""}" onclick="likeP(${p.id},this)">${ic(I.heart)}<span>${p.likes.length}</span></button><button class="rb" onclick="comments(${p.id})">${ic(I.cmt)}<span>${p.comments[0]?.count||0}</span></button><button class="rb" onclick="share()">${ic(I.share)}<span>Partager</span></button><button class="rb" onclick="vmuted=!vmuted;document.querySelectorAll('.reel video').forEach(v=>v.muted=vmuted);toast(vmuted?'Son coupé':'Son activé')">${ic(I.snd)}<span>Son</span></button></div></section>`}).join("");
-  initVideos(mn);
+/* ---------- VIDÉOS : communauté + découverte ---------- */
+async function loadDiscoverVideos(query){
+  const box=$("#discoverVideos");if(!box)return;
+  const q=(query||"Congo Kinshasa").trim().slice(0,80);
+  box.innerHTML="<div class='skel'></div><div class='skel'></div>";
+  try{
+    const cacheKey="cv-pixabay-"+q.toLowerCase();let cached=null;
+    try{cached=JSON.parse(localStorage.getItem(cacheKey)||"null")}catch(e){}
+    let items=cached&&Date.now()-cached.savedAt<86400000?cached.videos:null;
+    if(!items){
+      const {data:{session}}=await sb.auth.getSession();
+      const r=await fetch(SB_URL+"/functions/v1/cv-videos?q="+encodeURIComponent(q),{headers:{apikey:SB_KEY,Authorization:"Bearer "+(session?.access_token||SB_KEY)}});
+      const j=await r.json();if(!r.ok)throw new Error(j.error||"Source vidéo indisponible");
+      items=j.videos||[];
+      try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),videos:items}))}catch(e){}
+    }
+    if(!items.length)throw new Error("Aucune vidéo trouvée");
+    box.innerHTML="";
+    items.slice(0,8).forEach(v=>{
+      const card=document.createElement("article");card.className="stock-card";
+      const player=document.createElement("video");player.controls=true;player.playsInline=true;player.preload="none";player.poster=v.thumbnail||"";
+      const source=document.createElement("source");source.src=v.url;source.type="video/mp4";player.appendChild(source);
+      const meta=document.createElement("div");meta.className="video-meta";
+      const title=document.createElement("b");title.textContent=v.title||"Découverte Congo";
+      const credit=document.createElement("div");credit.className="mu";credit.textContent="Par "+(v.creator||"Pixabay")+" · ";
+      const link=document.createElement("a");link.href=v.source;link.target="_blank";link.rel="noopener";link.textContent="Source Pixabay";credit.appendChild(link);
+      meta.append(title,credit);card.append(player,meta);box.appendChild(card);
+    });
+  }catch(e){
+    box.innerHTML="<div class='video-note'>La sélection vidéo sera activée après configuration du service Pixabay dans Supabase. Consulte VIDEO_SETUP.md. Tes vidéos personnelles restent disponibles ci-dessus.</div>";
+  }
 }
-
+async function renderVideos(){
+  const mn=$("#mn");mn.className="";$("#app").classList.remove("inchat");
+  mn.innerHTML="<div class='h'>Découvrir</div><div class='video-note'>Une sélection vidéo plus fluide, sans lecteur TikTok ni lecture automatique. Chaque vidéo démarre seulement quand tu appuies sur Lecture.</div><div class='section-head'><div class='h'>La communauté Congo Vibe</div><button class='btn g sm' onclick=\"go('new')\">Publier</button></div><div id='communityVideos'><div class='skel'></div><div class='skel'></div></div><div class='section-head'><div class='h'>À découvrir</div><span class='mu'>Sélection vidéo</span></div><div class='sbar glass'><input id='vq' value='Congo Kinshasa' placeholder='Rechercher une vidéo'><button class='btn g sm' id='vsearch'>Chercher</button></div><div id='discoverVideos' class='video-grid'></div><div class='mu' style='text-align:center;margin:18px 0'><a href='https://pixabay.com/' target='_blank' rel='noopener'>Vidéos fournies par Pixabay</a></div>";
+  $("#vsearch").onclick=()=>loadDiscoverVideos($("#vq").value);
+  const box=$("#communityVideos");
+  const {data,error}=await sb.from("posts").select("*,"+PROF+",likes(user_id),comments(count)").eq("media_type","video").neq("kind","story").order("created_at",{ascending:false}).limit(20);
+  if(view!=="video")return;
+  if(error)box.innerHTML="<div class='video-note'>Impossible de charger les vidéos de la communauté pour le moment.</div>";
+  else if(!data?.length)box.innerHTML="<div class='video-note'>Aucune vidéo publiée pour le moment. Tu peux être parmi les premiers à en partager une.</div>";
+  else{
+    box.innerHTML="";
+    data.forEach(p=>{
+      const card=document.createElement("article");card.className="video-card glass";card.id="p"+p.id;
+      const player=document.createElement("video");player.controls=true;player.playsInline=true;player.preload="none";player.src=p.media_url;
+      const meta=document.createElement("div");meta.className="video-meta";
+      const who=document.createElement("div");who.className="row";who.innerHTML=av(p.profiles);
+      const info=document.createElement("div");info.style.minWidth="0";
+      const name=document.createElement("div");name.className="nm";name.textContent=p.profiles.display_name;
+      const handle=document.createElement("div");handle.className="mu";handle.textContent="@"+p.profiles.username+" · "+ago(p.created_at);
+      info.append(name,handle);who.appendChild(info);meta.appendChild(who);
+      if(p.content){const caption=document.createElement("p");caption.textContent=p.content;meta.appendChild(caption)}
+      const actions=document.createElement("div");actions.className="act";
+      const like=document.createElement("button");like.textContent="♡ "+p.likes.length;like.onclick=()=>likeP(p.id,like);
+      const comment=document.createElement("button");comment.textContent="Commentaires";comment.onclick=()=>comments(p.id);
+      const shareBtn=document.createElement("button");shareBtn.textContent="Partager";shareBtn.onclick=()=>share();
+      actions.append(like,comment,shareBtn);meta.appendChild(actions);card.append(player,meta);box.appendChild(card);
+    });
+  }
+  loadDiscoverVideos("Congo Kinshasa");
+}
 /* ---------- CRÉER ---------- */
 let FILE=null,ED={};
 function renderNew(){
