@@ -393,7 +393,7 @@ async function openChat(id){
   mn.innerHTML=`<div class="chat"><div class="chead glass"><button class="ib" onclick="go('chat')" aria-label="Retour">${ic(I.back)}</button>${av(p)}<div style="min-width:0"><div class="nm">${esc(p.display_name)}${badges(p)}</div><div class="mu" id="stt" data-username="${esc(p.username)}">@${esc(p.username)}</div></div><button class="ib" onclick="toggleChatSearch()" aria-label="Rechercher dans la conversation">⌕</button></div><div id="chatSearch" class="sbar glass" style="display:none;margin:8px 12px 0"><input id="chatSearchInput" placeholder="Rechercher un message…" oninput="filterChatMessages()"></div>
   <div id="ms"></div><div class="comp" id="comp"></div></div>`;
   const box=$("#ms");(ms||[]).forEach(appendMsg);if(!(ms||[]).length)box.innerHTML='<div class="empty">Dis bonjour à '+esc(p.display_name)+' !</div>';
-  box.scrollTop=box.scrollHeight;compIdle();sb.rpc("mark_read",{other:id});
+  box.scrollTop=box.scrollHeight;compIdle();sb.rpc("mark_read",{other:id});paintChatPresence();
 }
 function draftKey(){return 'cv-draft-'+me.id+'-'+chatWith}
 function saveDraft(){try{const v=$('#mi')?.value||'';if(v)localStorage.setItem(draftKey(),v);else localStorage.removeItem(draftKey())}catch(e){}}
@@ -406,8 +406,8 @@ function onType(){const has=$("#mi").value.trim().length>0;$("#mb").innerHTML=ic
   if(has&&Date.now()-typT>2000){typT=Date.now();chT&&chT.send({type:"broadcast",event:"t",payload:{from:me.id,to:chatWith}})}}
 function showTyping(){const s=$("#stt");if(!s)return;s.textContent="écrit…";s.style.color="var(--mint)";clearTimeout(typShow);typShow=setTimeout(()=>{s.textContent="";s.style.color=""},3000)}
 function mainBtn(){$("#mi").value.trim()?sendTxt():startRec()}
-async function sendTxt(){const i=$("#mi"),v=i.value.trim();if(!v)return;i.value="";$("#mb").innerHTML=ic(I.mic);
-  const{data,error}=await sb.from("messages").insert({sender:me.id,receiver:chatWith,content:v}).select().single();if(error)return toast("Message non envoyé");appendMsg(data)}
+async function sendTxt(){const i=$("#mi"),v=i.value.trim();if(!v)return;i.value="";saveDraft();$("#mb").innerHTML=ic(I.mic);
+  const{data,error}=await sb.from("messages").insert({sender:me.id,receiver:chatWith,content:v}).select().single();if(error){i.value=v;saveDraft();return toast("Message non envoyé")}appendMsg(data)}
 async function sendImg(inp){const f=inp.files[0];if(!f)return;toast("Envoi de la photo…");const path=`${me.id}/chat-${Date.now()}-${f.name.replace(/[^\w.]/g,"_")}`;
   const u=await sb.storage.from("media").upload(path,f);if(u.error)return toast(u.error.message);
   const{data,error}=await sb.from("messages").insert({sender:me.id,receiver:chatWith,content:"",media_url:sb.storage.from("media").getPublicUrl(path).data.publicUrl}).select().single();if(error)return toast("Photo non envoyée");appendMsg(data)}
