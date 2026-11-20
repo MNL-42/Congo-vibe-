@@ -395,6 +395,11 @@ async function openChat(id){
   const box=$("#ms");(ms||[]).forEach(appendMsg);if(!(ms||[]).length)box.innerHTML='<div class="empty">Dis bonjour à '+esc(p.display_name)+' !</div>';
   box.scrollTop=box.scrollHeight;compIdle();sb.rpc("mark_read",{other:id});
 }
+function draftKey(){return 'cv-draft-'+me.id+'-'+chatWith}
+function saveDraft(){try{const v=$('#mi')?.value||'';if(v)localStorage.setItem(draftKey(),v);else localStorage.removeItem(draftKey())}catch(e){}}
+function toggleChatSearch(){const b=$('#chatSearch');if(!b)return;b.style.display=b.style.display==='none'?'flex':'none';if(b.style.display!=='none')$('#chatSearchInput')?.focus();else{const i=$('#chatSearchInput');if(i)i.value='';filterChatMessages()}}
+function filterChatMessages(){const q=($('#chatSearchInput')?.value||'').trim().toLocaleLowerCase('fr');document.querySelectorAll('#ms .bub').forEach(b=>b.style.display=!q||b.textContent.toLocaleLowerCase('fr').includes(q)?'':'none')}
+function paintChatPresence(){const s=$('#stt');if(!s||!chatWith)return;const name=s.dataset.username||'';const on=onlineUsers.has(chatWith);s.textContent=on?'En ligne':'@'+name;s.style.color=on?'var(--mint)':''}
 function compIdle(){const c=$("#comp");if(!c)return;
   c.innerHTML=`<div class="in glass"><label class="ib up">${ic(I.clip)}<input type="file" accept="image/*" hidden onchange="sendImg(this)"></label><input id="mi" placeholder="Message" autocomplete="off" oninput="onType()" onkeydown="if(event.key==='Enter')sendTxt()"></div><button class="rbtn" id="mb" onclick="mainBtn()" aria-label="Envoyer ou enregistrer">${ic(I.mic)}</button>`}
 function onType(){const has=$("#mi").value.trim().length>0;$("#mb").innerHTML=ic(has?I.send:I.mic);
