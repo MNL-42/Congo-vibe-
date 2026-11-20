@@ -139,7 +139,34 @@ main.noPad{padding:0;scroll-snap-type:y mandatory;overflow-y:scroll}main.chatmod
 .crow{display:flex;gap:12px;align-items:center;padding:12px 8px;border-radius:16px;animation:up .3s both}.crow:active{background:var(--glass2)}
 .bdg{background:var(--mint);color:#04241d;border-radius:99px;font-size:11px;font-weight:800;padding:1px 8px}.pv{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
 .sbar{display:flex;align-items:center;gap:8px;border-radius:18px;padding:2px 14px;margin-bottom:12px;color:var(--mute)}.sbar input{background:none;border:0;margin:0;box-shadow:none}.sbar input:focus{box-shadow:none;background:none}
-.bub::after{content:"";display:block;clear:both}.emb{aspect-ratio:9/16;max-height:560px;background:#000}.emb iframe{width:100%;height:100%;border:0;display:block}.reel .emb{aspect-ratio:auto;max-height:none}.tap{position:absolute;inset:0;z-index:2}.reel .rinfo,.reel .rside{z-index:3}.reel.e .rinfo{display:none}</style>
+.bub::after{content:"";display:block;clear:both}.emb{aspect-ratio:9/16;max-height:560px;background:#000}.emb iframe{width:100%;height:100%;border:0;display:block}.reel .emb{aspect-ratio:auto;max-height:none}.tap{position:absolute;inset:0;z-index:2}.reel .rinfo,.reel .rside{z-index:3}.reel.e .rinfo{display:none}
+/* Premium liquid-glass refresh */
+:root{--glass:rgba(255,255,255,.075);--glass2:rgba(255,255,255,.12);--edge:rgba(226,239,255,.19);--gold:#ffd36b;--mint:#66f0d0;--sky:#78baff}
+body{background:radial-gradient(120% 80% at 50% -10%,rgba(70,135,255,.2),transparent 60%),#070b14}
+.glass,.card.glass,.chead,.comp .in,.sbar{background:linear-gradient(145deg,rgba(255,255,255,.14),rgba(255,255,255,.035) 60%,rgba(120,180,255,.06));border:1px solid rgba(226,239,255,.2);box-shadow:0 18px 45px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.2);-webkit-backdrop-filter:blur(28px) saturate(180%);backdrop-filter:blur(28px) saturate(180%)}
+.card.glass{position:relative;overflow:hidden;border-radius:24px}.card.glass:before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(125deg,rgba(255,255,255,.12),transparent 32%,transparent 75%,rgba(125,185,255,.08))}.card.glass>*{position:relative}
+header{background:rgba(7,11,20,.48);-webkit-backdrop-filter:blur(28px) saturate(180%);backdrop-filter:blur(28px) saturate(180%)}
+nav{background:rgba(16,24,43,.62);border:1px solid rgba(255,255,255,.2);box-shadow:0 18px 48px rgba(0,0,0,.4),inset 0 1px rgba(255,255,255,.2);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%)}
+nav button.on{background:linear-gradient(145deg,rgba(255,211,107,.2),rgba(255,255,255,.055));box-shadow:inset 0 1px rgba(255,255,255,.18)}
+.btn.g,.act button,.tabs button,.feats span{background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.035));border-color:rgba(255,255,255,.18);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+input,textarea,select{background:rgba(255,255,255,.055);border-color:rgba(255,255,255,.17);box-shadow:inset 0 1px 10px rgba(0,0,0,.12)}
+input:focus,textarea:focus,select:focus{border-color:rgba(102,240,208,.65);box-shadow:0 0 0 3px rgba(102,240,208,.12),0 8px 25px rgba(0,0,0,.15)}
+#app.inchat{background:radial-gradient(80% 50% at 10% 0%,rgba(74,163,255,.14),transparent 75%),radial-gradient(60% 55% at 100% 100%,rgba(62,224,197,.1),transparent 75%),#080e1a}
+.chead{position:relative;margin:8px 10px 0;padding:12px;border-radius:23px;border:1px solid rgba(255,255,255,.2);overflow:hidden}
+#ms{background:radial-gradient(rgba(255,255,255,.045) 1px,transparent 1.5px) 0 0/26px 26px;padding:18px 14px 20px;overscroll-behavior:contain}
+.bub{max-width:86%;padding:11px 14px 8px;border-radius:20px;margin:8px 0;line-height:1.48;font-size:14px;box-shadow:0 8px 22px rgba(0,0,0,.14);border:1px solid rgba(255,255,255,.13);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%)}
+.bub.me{background:linear-gradient(145deg,rgba(90,177,255,.36),rgba(53,211,190,.2));color:#f4fbff;border:1px solid rgba(140,218,255,.32);border-bottom-right-radius:7px;box-shadow:0 10px 26px rgba(31,125,205,.16),inset 0 1px rgba(255,255,255,.2)}
+.bub.ot{background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.055));color:var(--fg);border:1px solid rgba(255,255,255,.17);border-bottom-left-radius:7px}
+.bub .mt{font-size:10px;opacity:.7;margin-top:7px}.bub.me .mt{color:rgba(255,255,255,.8)}
+.dsep{margin:18px 0}.dsep span{padding:6px 13px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.comp{padding:10px 12px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,transparent,rgba(7,12,22,.55))}.comp .in{position:relative;border-radius:24px;padding:4px 10px}.comp .in input{position:relative;z-index:1}
+.rbtn{background:linear-gradient(145deg,#9cf4df,#72b9ff);color:#071421;box-shadow:0 8px 24px rgba(85,195,220,.25),inset 0 1px rgba(255,255,255,.7)}
+.crow{padding:13px 12px;border:1px solid transparent;border-radius:19px;transition:.2s}.crow:active{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.12)}
+.video-section{margin:14px 0 22px}.video-card{overflow:hidden;border-radius:23px;margin:12px 0;padding:10px}.video-card video{width:100%;max-height:420px;aspect-ratio:9/16;object-fit:cover;border-radius:17px;background:#03060b;display:block}.video-card .video-meta{padding:10px 4px 3px}
+.video-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stock-card{min-width:0;overflow:hidden;border-radius:18px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}.stock-card video{width:100%;aspect-ratio:9/14;object-fit:cover;display:block;background:#050914}.stock-card .video-meta{padding:9px;font-size:12px}.stock-card .video-meta .mu{font-size:11px}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:20px 2px 10px}.section-head .h{margin:0}.video-note{border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:13px;background:rgba(255,255,255,.055);color:var(--mute);font-size:12px}
+@media(min-width:520px){.video-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(prefers-reduced-transparency:reduce){.glass,.card.glass,.chead,.comp .in,nav{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(20,28,45,.96)}}
+</style>
 </head>
 <body>
 <div id="app"></div>
