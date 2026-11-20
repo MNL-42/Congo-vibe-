@@ -201,6 +201,8 @@ async function boot(){
     else if(view==="chat"&&!chatWith)renderChats();else if(m.receiver===me.id)toast("Nouveau message")})
   .on("postgres_changes",{event:"UPDATE",schema:"public",table:"messages"},p=>{const m=p.new;if(m.read_at&&m.sender===me.id)document.querySelectorAll(`[data-m="${m.id}"]`).forEach(e=>e.classList.add("rd"))}).subscribe();
   chT=sb.channel("typing").on("broadcast",{event:"t"},p=>{if(p.payload.to===me.id&&p.payload.from===chatWith)showTyping()}).subscribe();
+  presenceChannel=sb.channel("online-users",{config:{presence:{key:me.id}}});
+  presenceChannel.on("presence",{event:"sync"},()=>{const state=presenceChannel.presenceState();onlineUsers=new Set(Object.values(state).flat().map(x=>x.user_id).filter(Boolean));paintChatPresence()}).subscribe(async status=>{if(status==="SUBSCRIBED")await presenceChannel.track({user_id:me.id,username:me.username,online_at:new Date().toISOString()})});
   if(canPush()&&Notification.permission==="granted")enableNotifs(true);
   openFromHash()||go("home");
 }
