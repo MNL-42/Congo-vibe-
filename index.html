@@ -390,7 +390,7 @@ async function openChat(id){
   view="chat";chatWith=id;setNav("chat");const mn=$("#mn");mn.className="chatmode";$("#app").classList.add("inchat");
   const[{data:p},{data:ms}]=await Promise.all([sb.from("profiles").select("*").eq("id",id).single(),sb.from("messages").select("*").or(`and(sender.eq.${me.id},receiver.eq.${id}),and(sender.eq.${id},receiver.eq.${me.id})`).order("created_at").limit(300)]);
   if(chatWith!==id)return;
-  mn.innerHTML=`<div class="chat"><div class="chead glass"><button class="ib" onclick="go('chat')" aria-label="Retour">${ic(I.back)}</button>${av(p)}<div style="min-width:0"><div class="nm">${esc(p.display_name)}${badges(p)}</div><div class="mu" id="stt">@${esc(p.username)}</div></div></div>
+  mn.innerHTML=`<div class="chat"><div class="chead glass"><button class="ib" onclick="go('chat')" aria-label="Retour">${ic(I.back)}</button>${av(p)}<div style="min-width:0"><div class="nm">${esc(p.display_name)}${badges(p)}</div><div class="mu" id="stt" data-username="${esc(p.username)}">@${esc(p.username)}</div></div><button class="ib" onclick="toggleChatSearch()" aria-label="Rechercher dans la conversation">⌕</button></div><div id="chatSearch" class="sbar glass" style="display:none;margin:8px 12px 0"><input id="chatSearchInput" placeholder="Rechercher un message…" oninput="filterChatMessages()"></div>
   <div id="ms"></div><div class="comp" id="comp"></div></div>`;
   const box=$("#ms");(ms||[]).forEach(appendMsg);if(!(ms||[]).length)box.innerHTML='<div class="empty">Dis bonjour à '+esc(p.display_name)+' !</div>';
   box.scrollTop=box.scrollHeight;compIdle();sb.rpc("mark_read",{other:id});
@@ -400,8 +400,8 @@ function saveDraft(){try{const v=$('#mi')?.value||'';if(v)localStorage.setItem(d
 function toggleChatSearch(){const b=$('#chatSearch');if(!b)return;b.style.display=b.style.display==='none'?'flex':'none';if(b.style.display!=='none')$('#chatSearchInput')?.focus();else{const i=$('#chatSearchInput');if(i)i.value='';filterChatMessages()}}
 function filterChatMessages(){const q=($('#chatSearchInput')?.value||'').trim().toLocaleLowerCase('fr');document.querySelectorAll('#ms .bub').forEach(b=>b.style.display=!q||b.textContent.toLocaleLowerCase('fr').includes(q)?'':'none')}
 function paintChatPresence(){const s=$('#stt');if(!s||!chatWith)return;const name=s.dataset.username||'';const on=onlineUsers.has(chatWith);s.textContent=on?'En ligne':'@'+name;s.style.color=on?'var(--mint)':''}
-function compIdle(){const c=$("#comp");if(!c)return;
-  c.innerHTML=`<div class="in glass"><label class="ib up">${ic(I.clip)}<input type="file" accept="image/*" hidden onchange="sendImg(this)"></label><input id="mi" placeholder="Message" autocomplete="off" oninput="onType()" onkeydown="if(event.key==='Enter')sendTxt()"></div><button class="rbtn" id="mb" onclick="mainBtn()" aria-label="Envoyer ou enregistrer">${ic(I.mic)}</button>`}
+function compIdle(){const c=$("#comp");if(!c)return;let draft="";try{draft=localStorage.getItem(draftKey())||""}catch(e){}
+  c.innerHTML=`<div class="in glass"><label class="ib up">${ic(I.clip)}<input type="file" accept="image/*" hidden onchange="sendImg(this)"></label><input id="mi" value="${esc(draft)}" placeholder="Message" autocomplete="off" oninput="onType();saveDraft()" onkeydown="if(event.key==='Enter')sendTxt()"></div><button class="rbtn" id="mb" onclick="mainBtn()" aria-label="Envoyer ou enregistrer">${ic(draft.trim()?I.send:I.mic)}</button>`}
 function onType(){const has=$("#mi").value.trim().length>0;$("#mb").innerHTML=ic(has?I.send:I.mic);
   if(has&&Date.now()-typT>2000){typT=Date.now();chT&&chT.send({type:"broadcast",event:"t",payload:{from:me.id,to:chatWith}})}}
 function showTyping(){const s=$("#stt");if(!s)return;s.textContent="écrit…";s.style.color="var(--mint)";clearTimeout(typShow);typShow=setTimeout(()=>{s.textContent="";s.style.color=""},3000)}
