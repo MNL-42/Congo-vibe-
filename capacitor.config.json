@@ -1,0 +1,9 @@
+{
+  "appId": "cd.congovibe.app",
+  "appName": "Congo Vibe",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "backgroundColor": "#070b14"
+  }
+}
